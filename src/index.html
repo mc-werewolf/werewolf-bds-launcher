@@ -11,8 +11,14 @@
   <body>
     <main class="container">
       <p>MC WEREWOLF</p>
-      <h1 id="update-status">アドオンを確認しています…</h1>
+      <h1 id="update-status">BDSをセットアップ</h1>
       <pre id="update-details" aria-live="polite"></pre>
+
+      <label class="agreement">
+        <input id="eula-agreement" type="checkbox" />
+        <span><a href="https://www.minecraft.net/eula" target="_blank">Minecraft EULA</a> と <a href="https://www.microsoft.com/privacy/privacystatement" target="_blank">プライバシーポリシー</a>に同意します</span>
+      </label>
+      <button id="prepare-btn" disabled>ダウンロードして準備</button>
 
       <div class="row" id="actions" hidden>
         <button id="start-server-btn">サーバー起動</button>

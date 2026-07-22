@@ -46,6 +46,12 @@ pub struct UpdateResult {
     updated: bool,
 }
 
+impl UpdateResult {
+    pub fn addon_id(&self) -> &str {
+        &self.addon_id
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct InstalledVersion {
     version: String,

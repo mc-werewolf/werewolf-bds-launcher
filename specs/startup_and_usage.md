@@ -9,6 +9,8 @@
 1. **BDS本体の更新確認**
    - Microsoftのサーバーに問い合わせ、統合版BDSの最新バージョンが出ているか確認する
    - バージョンが上がっていれば、BDS本体を更新する
+   - 初回ダウンロード前にMinecraft EULAとプライバシーポリシーへの同意を求める
+   - 公式download links APIの`serverBedrockWindows`を使用する
 
 2. **専用ワールドデータの取得**
    - マイクラ人狼専用ワールドのデータは、公式Linuxサーバー側に置いてある
@@ -18,6 +20,7 @@
 3. **アドオンの更新確認・適用**
    - 各アドオン (game-manager, vanillapack, additional-roles-1, kairo, kairo-database など) は GitHub Releases で配布される
    - 専用APIを使って更新情報を取得し、更新があれば適用する
+   - Kairo RegistryのZIPからBP/RPをBDSへ同期し、manifest UUID/versionをworld pack JSONへ反映する
 
 上記1〜3が完了して初めて、メイン画面のボタン群が出現する。
 
