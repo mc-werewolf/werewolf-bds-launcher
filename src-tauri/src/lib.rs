@@ -1,4 +1,5 @@
 mod bds;
+mod network;
 mod updater;
 
 use tauri::Manager;
@@ -38,12 +39,21 @@ fn start_server(
     bds::start_bds(&install_root, &process)
 }
 
+#[tauri::command]
+async fn publish_server() -> Result<network::PublishResult, String> {
+    network::publish().await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(bds::ServerProcess::default())
-        .invoke_handler(tauri::generate_handler![prepare_server, start_server])
+        .invoke_handler(tauri::generate_handler![
+            prepare_server,
+            start_server,
+            publish_server
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

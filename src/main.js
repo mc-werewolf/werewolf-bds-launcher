@@ -5,6 +5,8 @@ window.addEventListener("DOMContentLoaded", () => {
   const updateDetailsEl = document.querySelector("#update-details");
   const actionsEl = document.querySelector("#actions");
   const startServerMsgEl = document.querySelector("#start-server-msg");
+  const publishButton = document.querySelector("#publish-server-btn");
+  const publishMessage = document.querySelector("#publish-server-msg");
   const prepareButton = document.querySelector("#prepare-btn");
   const agreement = document.querySelector("#eula-agreement");
   agreement.addEventListener("change", () => { prepareButton.disabled = !agreement.checked; });
@@ -31,6 +33,20 @@ window.addEventListener("DOMContentLoaded", () => {
     try {
       const result = await invoke("start_server");
       startServerMsgEl.textContent = `BDSを起動しました（PID ${result.pid}）。接続先: ${result.address}:${result.port}`;
+      publishButton.hidden = false;
     } catch (error) { startServerMsgEl.textContent = String(error); }
+  });
+  publishButton.addEventListener("click", async () => {
+    publishButton.disabled = true;
+    publishMessage.textContent = "Firewallとルーターを設定しています。Windowsの確認画面を許可してください…";
+    try {
+      const result = await invoke("publish_server");
+      publishMessage.textContent = result.warning
+        ? `公開候補: ${result.publicAddress} — ${result.warning}`
+        : `公開しました: ${result.publicAddress}（LAN: ${result.localAddress}）`;
+    } catch (error) {
+      publishMessage.textContent = `公開できませんでした: ${error}`;
+      publishButton.disabled = false;
+    }
   });
 });
