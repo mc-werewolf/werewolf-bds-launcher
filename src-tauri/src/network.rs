@@ -55,7 +55,7 @@ pub struct PublishResult {
 pub async fn publish(state: NetworkState) -> Result<PublishResult, String> {
     let firewall_requested = request_firewall_rule()?;
     let direct = discover_direct_endpoint().await;
-    let (endpoint, local_address, upnp_mapped, warning) = match direct {
+    let (mut endpoint, local_address, upnp_mapped, mut warning) = match direct {
         Ok((endpoint, local_address)) if is_public_ip(endpoint.host_name.parse().unwrap()) => {
             (Some(endpoint), Some(local_address), true, None)
         }
@@ -83,6 +83,19 @@ pub async fn publish(state: NetworkState) -> Result<PublishResult, String> {
     spawn_heartbeat(state.clone());
     if endpoint.is_none() {
         spawn_relay(state.clone(), session.clone());
+        for _ in 0..40 {
+            tokio::time::sleep(Duration::from_millis(250)).await;
+            let assigned = state
+                .0
+                .lock()
+                .ok()
+                .and_then(|value| value.as_ref().and_then(|value| value.endpoint.clone()));
+            if assigned.is_some() {
+                endpoint = assigned;
+                warning = None;
+                break;
+            }
+        }
     }
     Ok(PublishResult {
         server_id: session.id,
