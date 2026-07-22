@@ -42,7 +42,7 @@ window.addEventListener("DOMContentLoaded", () => {
     try {
       const result = await invoke("publish_server");
       publishMessage.textContent = result.warning
-        ? `公開候補: ${result.publicAddress} — ${result.warning}`
+        ? `中央サーバーへ登録しました（ID: ${result.serverId}）。${result.warning}`
         : `公開しました: ${result.publicAddress}（LAN: ${result.localAddress}）`;
     } catch (error) {
       publishMessage.textContent = `公開できませんでした: ${error}`;

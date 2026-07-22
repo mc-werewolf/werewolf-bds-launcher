@@ -40,8 +40,10 @@ fn start_server(
 }
 
 #[tauri::command]
-async fn publish_server() -> Result<network::PublishResult, String> {
-    network::publish().await
+async fn publish_server(
+    state: tauri::State<'_, network::NetworkState>,
+) -> Result<network::PublishResult, String> {
+    network::publish(state.inner().clone()).await
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -49,6 +51,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(bds::ServerProcess::default())
+        .manage(network::NetworkState::default())
         .invoke_handler(tauri::generate_handler![
             prepare_server,
             start_server,
