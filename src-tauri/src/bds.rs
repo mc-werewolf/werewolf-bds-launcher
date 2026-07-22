@@ -257,19 +257,28 @@ fn install_pack(source: &Path, target: &Path, packs: &mut Vec<WorldPack>) -> io:
 fn ensure_server_properties(bds_root: &Path) -> io::Result<()> {
     let path = bds_root.join("server.properties");
     let content = fs::read_to_string(&path).unwrap_or_default();
-    let mut found = false;
+    let mut level_name_found = false;
+    let mut allow_list_found = false;
     let mut output = String::new();
     for line in content.lines() {
         if line.starts_with("level-name=") {
             output.push_str(&format!("level-name={WORLD_NAME}\n"));
-            found = true;
+            level_name_found = true;
+        } else if line.starts_with("allow-list=") {
+            // The launcher starts a local server that must be connectable before
+            // an operator has had a chance to populate allowlist.json.
+            output.push_str("allow-list=false\n");
+            allow_list_found = true;
         } else {
             output.push_str(line);
             output.push('\n');
         }
     }
-    if !found {
+    if !level_name_found {
         output.push_str(&format!("level-name={WORLD_NAME}\n"));
+    }
+    if !allow_list_found {
+        output.push_str("allow-list=false\n");
     }
     fs::write(path, output)
 }
@@ -430,5 +439,27 @@ mod tests {
             version_from_url("https://example.test/bin-win/bedrock-server-1.26.33.2.zip"),
             "1.26.33.2"
         );
+    }
+
+    #[test]
+    fn configures_world_and_disables_empty_allow_list() {
+        let root = std::env::temp_dir().join(format!(
+            "bds-launcher-properties-test-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        fs::write(
+            root.join("server.properties"),
+            "level-name=Bedrock level\nallow-list=true\nserver-port=19132\n",
+        )
+        .unwrap();
+
+        ensure_server_properties(&root).unwrap();
+        let configured = fs::read_to_string(root.join("server.properties")).unwrap();
+        assert!(configured.contains("level-name=Werewolf\n"));
+        assert!(configured.contains("allow-list=false\n"));
+        assert!(configured.contains("server-port=19132\n"));
+        let _ = fs::remove_dir_all(root);
     }
 }
