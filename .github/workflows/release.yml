@@ -33,17 +33,39 @@ jobs:
         run: cargo test --locked
 
       - name: Build NSIS installer
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: pnpm tauri build --bundles nsis
 
-      - name: Prepare stable download name
+      - name: Prepare updater assets
         shell: pwsh
         run: |
           $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe" | Select-Object -First 1
           if (-not $installer) { throw "NSIS installer was not generated" }
+          $signatureFile = "$($installer.FullName).sig"
+          if (-not (Test-Path $signatureFile)) { throw "Updater signature was not generated" }
+
           Copy-Item $installer.FullName "bds-launcher-windows-x64-setup.exe"
+          Copy-Item $signatureFile "bds-launcher-windows-x64-setup.exe.sig"
+
+          $version = $env:GITHUB_REF_NAME.TrimStart("v")
+          $downloadUrl = "https://github.com/mc-werewolf/bds-launcher/releases/download/$($env:GITHUB_REF_NAME)/bds-launcher-windows-x64-setup.exe"
+          $signature = (Get-Content $signatureFile -Raw).Trim()
+          $manifest = @{
+            version = $version
+            notes = "MC Werewolf BDS Launcher $version"
+            pub_date = (Get-Date).ToUniversalTime().ToString("o")
+            platforms = @{
+              "windows-x86_64" = @{
+                signature = $signature
+                url = $downloadUrl
+              }
+            }
+          }
+          $manifest | ConvertTo-Json -Depth 5 | Set-Content "latest.json" -Encoding utf8
 
       - name: Publish GitHub Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create $env:GITHUB_REF_NAME "bds-launcher-windows-x64-setup.exe" --verify-tag --generate-notes --title $env:GITHUB_REF_NAME
+        run: gh release create $env:GITHUB_REF_NAME "bds-launcher-windows-x64-setup.exe" "bds-launcher-windows-x64-setup.exe.sig" "latest.json" --verify-tag --generate-notes --title $env:GITHUB_REF_NAME

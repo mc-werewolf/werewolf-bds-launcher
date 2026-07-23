@@ -1,6 +1,10 @@
 const { invoke } = window.__TAURI__.core;
 
 window.addEventListener("DOMContentLoaded", () => {
+  const appUpdateEl = document.querySelector("#app-update");
+  const appUpdateTitleEl = document.querySelector("#app-update-title");
+  const appUpdateMessageEl = document.querySelector("#app-update-message");
+  const appUpdateButton = document.querySelector("#app-update-btn");
   const updateStatusEl = document.querySelector("#update-status");
   const updateDetailsEl = document.querySelector("#update-details");
   const actionsEl = document.querySelector("#actions");
@@ -9,6 +13,37 @@ window.addEventListener("DOMContentLoaded", () => {
   const publishMessage = document.querySelector("#publish-server-msg");
   const prepareButton = document.querySelector("#prepare-btn");
   const agreement = document.querySelector("#eula-agreement");
+
+  const checkAppUpdate = async () => {
+    try {
+      const update = await invoke("check_app_update");
+      if (!update) return;
+
+      appUpdateTitleEl.textContent = `ランチャー ${update.version} を利用できます`;
+      appUpdateMessageEl.textContent =
+        `現在のバージョン: ${update.currentVersion}` +
+        (update.notes ? `\n${update.notes}` : "");
+      appUpdateEl.hidden = false;
+    } catch (error) {
+      console.warn("ランチャーの更新確認に失敗しました", error);
+    }
+  };
+
+  appUpdateButton.addEventListener("click", async () => {
+    appUpdateButton.disabled = true;
+    appUpdateButton.textContent = "更新をダウンロードしています…";
+    appUpdateMessageEl.textContent = "完了後、ランチャーを再起動します。";
+    try {
+      await invoke("install_app_update");
+    } catch (error) {
+      appUpdateMessageEl.textContent = String(error);
+      appUpdateButton.textContent = "再試行";
+      appUpdateButton.disabled = false;
+    }
+  });
+
+  void checkAppUpdate();
+
   agreement.addEventListener("change", () => { prepareButton.disabled = !agreement.checked; });
   prepareButton.addEventListener("click", async () => {
     prepareButton.disabled = true;

@@ -26,6 +26,22 @@
   text-align: center;
 }
 
+.app-update {
+  align-self: center;
+  width: min(680px, calc(100% - 40px));
+  box-sizing: border-box;
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid #74c69d;
+  border-radius: 12px;
+  background: rgba(116, 198, 157, 0.12);
+}
+
+.app-update p {
+  margin: 6px 0 12px;
+  white-space: pre-wrap;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
