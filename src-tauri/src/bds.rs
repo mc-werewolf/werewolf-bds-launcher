@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Cursor, Write},
@@ -13,6 +15,8 @@ const DOWNLOAD_LINKS_URL: &str =
 const WORLD_NAME: &str = "Werewolf";
 const WORLD_METADATA_URL: &str = "https://mc-werewolf.com/api/world/latest";
 const MAX_BDS_EXPANDED_SIZE: u64 = 2 * 1024 * 1024 * 1024;
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 pub struct ServerProcess(pub Mutex<Option<Child>>);
 
@@ -430,11 +434,15 @@ pub fn start_bds(install_root: &Path, process: &ServerProcess) -> Result<LaunchR
         .open(bds_root.join("bedrock_server.log"))
         .map_err(|error| error.to_string())?;
     let error_log = log.try_clone().map_err(|error| error.to_string())?;
-    let child = Command::new(executable)
+    let mut command = Command::new(executable);
+    command
         .current_dir(&bds_root)
         .stdin(Stdio::piped())
         .stdout(Stdio::from(log))
-        .stderr(Stdio::from(error_log))
+        .stderr(Stdio::from(error_log));
+    #[cfg(target_os = "windows")]
+    command.creation_flags(CREATE_NO_WINDOW);
+    let child = command
         .spawn()
         .map_err(|error| format!("BDSを起動できませんでした: {error}"))?;
     let pid = child.id();
