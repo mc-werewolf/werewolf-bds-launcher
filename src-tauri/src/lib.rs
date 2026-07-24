@@ -33,7 +33,10 @@ async fn check_app_update(app: tauri::AppHandle) -> Result<Option<AppUpdate>, St
 }
 
 #[tauri::command]
-async fn install_app_update(app: tauri::AppHandle) -> Result<(), String> {
+async fn install_app_update(
+    app: tauri::AppHandle,
+    process: tauri::State<'_, bds::ServerProcess>,
+) -> Result<(), String> {
     let update = app
         .updater()
         .map_err(|error| format!("更新機能を初期化できませんでした: {error}"))?
@@ -46,6 +49,13 @@ async fn install_app_update(app: tauri::AppHandle) -> Result<(), String> {
         .download_and_install(|_, _| {}, || {})
         .await
         .map_err(|error| format!("更新をインストールできませんでした: {error}"))?;
+
+    // BDS is a plain child process (no Windows job-object linkage), so it
+    // survives app.restart() as an orphan the next launcher instance has no
+    // handle to and therefore can't stop or detect. Stop it gracefully here
+    // while we still hold the handle; the next launch's prepare/start flow
+    // will bring it back up with whatever updated addons/config are due.
+    let _ = bds::stop_bds(&process);
 
     app.restart();
 }
